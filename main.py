@@ -62,10 +62,10 @@ class SecondForm(QWidget):
         self.setWindowTitle('Обновить данные')
 
         self.labels = [QLabel(self) for _ in range(5)]
-        self.buttn = [QPushButton(self) for _ in range(2)]
+        self.buttn = [QPushButton(self) for _ in range(3)]
 
         self.bd_list = ['Фамилия автора:', 'Название книги:', 'Год издания:', 'Издатель книги:', 'Жанр произведения:']
-        self.name_btn_list = ['Загрузить', 'Удалить по названию']
+        self.name_btn_list = ['Загрузить', 'Удалить по названию', 'Обновить по id']
         self.wy = 10
         self.by = 210
 
@@ -75,7 +75,7 @@ class SecondForm(QWidget):
             self.labels[i].move(10, self.wy)
             self.wy += 40
 
-        for i in range(2):
+        for i in range(3):
             self.buttn[i].move(10, self.by)
             self.buttn[i].setText(self.name_btn_list[i])
             self.buttn[i].resize(120, 25)
@@ -111,12 +111,27 @@ class SecondForm(QWidget):
         self.title_delete.move(140, 252)
         self.title_delete.resize(100, 22)
 
+        self.update_edit = QLineEdit(self)
+        self.update_edit.move(140, 292)
+        self.update_edit.resize(22, 22)
+
         self.window_error = QLabel(self)
-        self.window_error.move(10, 300)
+        self.window_error.move(10, 330)
         self.window_error.resize(300, 22)
 
-    def create_table(self):
-        print('Hello world :)')
+    def update(self):
+        if self.update_edit.text() == '' or self.author.text() == '' or self.title.text() == '' or (
+                self.year.text() == '' or self.year.text().isalpha()) or self.publisher.text() == '':
+            self.window_error.setText('Неверно заполнена форма')
+        else:
+            self.window_error.setText('')
+            query = "UPDATE inf_about_book SET author = '{}', title = '{}', " \
+                    "year = '{}', publisher = '{}', genre = '{}' WHERE id = {}".format(
+                self.author.text(), self.title.text(), self.year.text(), self.publisher.text(),
+                self.list_genres.currentText(), int(self.update_edit.text()))
+            self.cur.execute(query)
+            self.con.commit()
+            self.window().close()
 
     def load(self):
         if self.author.text() == '' or self.title.text() == '' or (
@@ -162,6 +177,9 @@ class SecondForm(QWidget):
         elif order == 'Удалить по названию':
             self.delete()
 
+        elif order == 'Обновить по id':
+            self.update()
+
 
 class Filtration(QWidget):
     def __init__(self):
@@ -192,14 +210,8 @@ class Filtration(QWidget):
         self.push_btn = QPushButton(self)
         self.push_btn.resize(170, 60)
         self.push_btn.move(90, 100)
-        self.push_btn.setText('Отфильтровать библиотеку')
+        self.push_btn.setText('Обновить данные')
         self.push_btn.clicked.connect(self.filtrations)
-
-        self.update_btn = QPushButton(self)
-        self.update_btn.move(90, 80)
-        self.update_btn.resize(170, 22)
-        self.update_btn.setText('Обновить данные окна ^')
-        self.update_btn.clicked.connect(self.update_combobox2)
 
     def update_combobox2(self):
         self.combobox2.clear()
@@ -210,14 +222,23 @@ class Filtration(QWidget):
 
     def filtrations(self):
         global QUERY
-        if self.combobox1.currentText() == 'Показать всё':
+        self.push_btn.setText('Обновить библиотеку')
+        if self.combobox1.currentText() and self.combobox2.currentText():
+            QUERY = "SELECT author, title, year, publisher, genre from inf_about_book WHERE {} = '{}'".format(
+                self.inf_about_book_list[self.combobox1.currentText()], self.combobox2.currentText())
+            self.window().close()
+            return QUERY
+        elif self.combobox1.currentText() == 'Показать всё':
+            self.combobox2.hide()
             QUERY = "SELECT * from inf_about_book"
             self.window().close()
             return QUERY
-        QUERY = "SELECT author, title, year, publisher, genre from inf_about_book WHERE {} = '{}'".format(
-            self.inf_about_book_list[self.combobox1.currentText()], self.combobox2.currentText())
-        self.window().close()
-        return QUERY
+        else:
+            self.combobox2.clear()
+            query = "SELECT {} FROM inf_about_book".format(self.inf_about_book_list[self.combobox1.currentText()])
+            result = self.cur.execute(query).fetchall()
+            for res in result:
+                self.combobox2.addItem(res[0])
 
 
 if __name__ == '__main__':
