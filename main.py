@@ -62,10 +62,10 @@ class SecondForm(QWidget):
         self.setWindowTitle('Обновить данные')
 
         self.labels = [QLabel(self) for _ in range(5)]
-        self.buttn = [QPushButton(self) for _ in range(2)]
+        self.buttn = [QPushButton(self) for _ in range(3)]
 
         self.bd_list = ['Фамилия автора:', 'Название книги:', 'Год издания:', 'Издатель книги:', 'Жанр произведения:']
-        self.name_btn_list = ['Загрузить', 'Удалить по названию']
+        self.name_btn_list = ['Загрузить', 'Удалить по названию', 'Обновить по id']
         self.wy = 10
         self.by = 210
 
@@ -75,7 +75,7 @@ class SecondForm(QWidget):
             self.labels[i].move(10, self.wy)
             self.wy += 40
 
-        for i in range(2):
+        for i in range(3):
             self.buttn[i].move(10, self.by)
             self.buttn[i].setText(self.name_btn_list[i])
             self.buttn[i].resize(120, 25)
@@ -111,12 +111,21 @@ class SecondForm(QWidget):
         self.title_delete.move(140, 252)
         self.title_delete.resize(100, 22)
 
+        self.update_edit = QLineEdit(self)
+        self.update_edit.move(140, 292)
+        self.update_edit.resize(22, 22)
+
         self.window_error = QLabel(self)
         self.window_error.move(10, 300)
         self.window_error.resize(300, 22)
 
-    def create_table(self):
-        print('Hello world :)')
+    def update(self):
+        query = "UPDATE inf_about_book SET author = '{}', title = '{}', year = '{}', publisher = '{}', genre = '{}' WHERE id = {}".format(
+            self.author.text(), self.title.text(), self.year.text(), self.publisher.text(),
+            self.list_genres.currentText(), int(self.update_edit.text()))
+        print(query)
+        self.cur.execute(order)
+        self.con.commit()
 
     def load(self):
         if self.author.text() == '' or self.title.text() == '' or (
@@ -161,6 +170,9 @@ class SecondForm(QWidget):
 
         elif order == 'Удалить по названию':
             self.delete()
+
+        elif order == 'Обновить по id':
+            self.update()
 
 
 class Filtration(QWidget):
