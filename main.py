@@ -241,6 +241,128 @@ class Filtration(QWidget):
                 self.combobox2.addItem(res[0])
 
 
+class ReadersMap(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+        self.setGeometry(282, 200, 450, 400)
+        self.setWindowTitle('Карточка читателя')
+
+        self.con = sqlite3.connect('books.db')
+        self.cur = self.con.cursor()
+
+    def initUI(self):
+        self.btn = [QPushButton(self) for _ in range(2)]
+        self.labels = [QLabel(self) for _ in range(4)]
+        self.name_btn_list = ['Обновить', 'Заполнить карточку читателя']
+        self.label_name_list = ['Имя:', 'Возраст:', 'Время:', 'Книга:']
+        self.wx = 8
+        self.wy = 232
+
+        for i in range(2):
+            self.btn[i].move(self.wx, 198)
+            self.btn[i].setText(self.name_btn_list[i])
+            self.btn[i].resize(180, 25)
+            self.btn[i].clicked.connect(self.define_btn)
+            self.wx += 180
+
+        for i in range(4):
+            self.labels[i].setText(self.label_name_list[i])
+            self.labels[i].resize(120, 15)
+            self.labels[i].move(10, self.wy)
+            self.labels[i].hide()
+            self.wy += 30
+
+        self.name = QLineEdit(self)
+        self.name.move(65, 232)
+        self.name.resize(140, 22)
+        self.name.hide()
+
+        self.age = QLineEdit(self)
+        self.age.move(65, 260)
+        self.age.resize(140, 22)
+        self.age.hide()
+
+        self.time = QLineEdit(self)
+        self.time.move(65, 288)
+        self.time.resize(140, 22)
+        self.time.hide()
+
+        self.books_list = QComboBox(self)
+        self.books_list.move(65, 316)
+        self.books_list.resize(140, 22)
+        self.books_list.hide()
+        self.con = sqlite3.connect("books.db")
+        self.cur = self.con.cursor()
+        query_title = "SELECT title FROM inf_about_book"
+        result = self.cur.execute(query_title).fetchall()
+        for elem in result:
+            self.books_list.addItem(elem[0])
+
+        self.push_btn = QPushButton(self)
+        self.push_btn.move(8, 344)
+        self.push_btn.resize(100, 25)
+        self.push_btn.setText('Добавить в БД')
+        self.push_btn.clicked.connect(self.define_btn)
+        self.push_btn.hide()
+
+    def readers_table(self):
+        query = "SELECT reader, age, book_name, time FROM readers"
+        res = self.cur.execute(query).fetchall()
+        central_widget = QWidget(self)
+        central_widget.setMaximumSize(450, 200)
+        self.setCentralWidget(central_widget)
+
+        gl = QGridLayout(self)
+        central_widget.setLayout(gl)
+
+        table = QTableWidget(self)
+        table.setColumnCount(4)
+        table.setRowCount(0)
+
+        for i, row in enumerate(res):
+            table.setRowCount(table.rowCount() + 1)
+            for j, elem in enumerate(row):
+                table.setItem(i, j, QTableWidgetItem(str(elem)))
+
+        gl.addWidget(table, 0, 0)
+
+        table.setHorizontalHeaderLabels(['Владелец', 'Возраст', 'Книга', 'Время'])
+
+        for i in range(4):
+            self.labels[i].hide()
+        self.name.hide()
+        self.age.hide()
+        self.time.hide()
+        self.books_list.hide()
+        self.push_btn.hide()
+
+    def add_readers(self):
+        self.con = sqlite3.connect("books.db")
+        self.cur = self.con.cursor()
+        order_readers = "INSERT INTO readers(reader, age, time, book_name) VALUES('{}', '{}', '{}', '{}')".format(
+            self.name.text(), self.age.text(), self.time.text(), self.books_list.currentText())
+        print(order_readers)
+        self.cur.execute(order_readers).fetchall()
+        self.con.commit()
+
+    def define_btn(self):
+        order = self.sender().text()
+        if order == 'Обновить':
+            self.readers_table()
+        elif order == 'Добавить в БД':
+            self.add_readers()
+        elif order == 'Заполнить карточку читателя':
+            for i in range(4):
+                self.labels[i].show()
+            self.name.show()
+            self.age.show()
+            self.time.show()
+            self.books_list.show()
+            self.push_btn.show()
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = MyWidget()
