@@ -3,9 +3,9 @@ import sys
 
 from PyQt5 import uic
 from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication, QLabel, QLineEdit, QPushButton, \
-    QTableWidgetItem, QComboBox, QMessageBox
+    QTableWidgetItem, QComboBox, QMessageBox, QTableWidget, QGridLayout
 
-QUERY = "SELECT author, title, year, publisher, genre FROM inf_about_book"
+QUERY = "SELECT author, title, year, publisher, genre, availability FROM inf_about_book"
 
 
 class MyWidget(QMainWindow):
@@ -21,7 +21,7 @@ class MyWidget(QMainWindow):
         self.setWindowTitle('Электронная библиотека')
 
         self.pushButton.clicked.connect(lambda: self.choose(QUERY))
-        self.pushButton_2.clicked.connect(self.update_form)
+        self.pushButton_2.clicked.connect(self.readers_map_form)
         self.pushButton_3.clicked.connect(self.filter_form)
 
     def update_form(self):
@@ -32,6 +32,10 @@ class MyWidget(QMainWindow):
         self.third_form = Filtration()
         self.third_form.show()
 
+    def readers_map_form(self):
+        self.fourth_form = ReadersMap()
+        self.fourth_form.show()
+
     def choose(self, query):
         res = self.cur.execute(query).fetchall()
         if not res:
@@ -40,7 +44,7 @@ class MyWidget(QMainWindow):
             return
         else:
             self.statusBar().showMessage('')
-            self.tableWidget.setColumnCount(5)
+            self.tableWidget.setColumnCount(6)
             self.tableWidget.setRowCount(0)
             self.tableWidget.setMaximumWidth(527)
             for i, row in enumerate(res):
@@ -49,7 +53,7 @@ class MyWidget(QMainWindow):
                 for j, elem in enumerate(row):
                     self.tableWidget.setItem(
                         i, j, QTableWidgetItem(str(elem)))
-            self.tableWidget.setHorizontalHeaderLabels(['Автор', 'Книга', 'Год', 'Издательство', 'Жанр'])
+            self.tableWidget.setHorizontalHeaderLabels(['Автор', 'Книга', 'Год', 'Издательство', 'Жанр', 'Наличие'])
 
 
 class SecondForm(QWidget):
