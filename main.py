@@ -328,44 +328,40 @@ class ReadersMap(QMainWindow):
         self.window_error.move(8, 370)
         self.window_error.resize(300, 25)
 
+        self.central_widget = QWidget(self)
+        self.central_widget.setMaximumSize(450, 200)
+        self.setCentralWidget(self.central_widget)
+        gl = QGridLayout(self)
+        self.central_widget.setLayout(gl)
+        self.table = QTableWidget(self)
+        gl.addWidget(self.table, 0, 0)
+        self.table.setHorizontalHeaderLabels(['Владелец', 'Возраст', 'Книга', 'Время'])
+
     def readers_table(self):
         query = "SELECT reader, age, book_name, time FROM readers"
         res = self.cur.execute(query).fetchall()
-        central_widget = QWidget(self)
-        central_widget.setMaximumSize(450, 200)
-        self.setCentralWidget(central_widget)
-
-        gl = QGridLayout(self)
-        central_widget.setLayout(gl)
-
-        table = QTableWidget(self)
-        table.setColumnCount(4)
-        table.setRowCount(0)
-
+        self.table.setColumnCount(4)
+        self.table.setRowCount(0)
         for i, row in enumerate(res):
-            table.setRowCount(table.rowCount() + 1)
+            self.table.setRowCount(self.table.rowCount() + 1)
             for j, elem in enumerate(row):
-                table.setItem(i, j, QTableWidgetItem(str(elem)))
-
-        gl.addWidget(table, 0, 0)
-
-        table.setHorizontalHeaderLabels(['Владелец', 'Возраст', 'Книга', 'Время'])
+                self.table.setItem(i, j, QTableWidgetItem(str(elem)))
 
         for i in range(4):
             self.labels[i].hide()
         self.show_readers_map('hide')
 
     def add_readers(self):
-        if self.name.text() == '' or (self.age.text() == '' or self.age.text().isalpha()) or self.time.text() == '' or self.books_list.currentText() in self.employed_list:
+        if self.name.text() == '' or (
+                self.age.text() == '' or self.age.text().isalpha()) or self.time.text() == '' or self.books_list.currentText() in self.employed_list:
             self.window_error.setText('Неверно заполнена форма')
             self.show_readers_map('clear')
         else:
             self.window_error.setText('')
-            self.con = sqlite3.connect("books.db")
-            self.cur = self.con.cursor()
             order_readers = "INSERT INTO readers(reader, age, time, book_name) VALUES('{}', '{}', '{}', '{}')".format(
                 self.name.text(), self.age.text(), self.time.text(), self.books_list.currentText())
             self.employed_list.append(self.books_list.currentText())
+            self.name_list.append(self.name.text())
             order_update = "UPDATE inf_about_book SET availability = 'Занята: {}' WHERE title = '{}'".format(
                 self.name.text(), self.books_list.currentText())
             self.cur.execute(order_readers).fetchall()
@@ -406,8 +402,6 @@ class ReadersMap(QMainWindow):
             self.show_readers_map('clear')
         else:
             self.window_error.setText('')
-            self.con = sqlite3.connect("books.db")
-            self.cur = self.con.cursor()
             order_update = "UPDATE inf_about_book SET availability = 'Имеется' WHERE title IN (SELECT book_name FROM readers WHERE reader = '{}')".format(
                 self.name.text())
             order_delete = "DELETE FROM readers WHERE reader = '{}'".format(self.name.text())
