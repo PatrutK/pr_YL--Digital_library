@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication, QLabel, QLineEdi
 QUERY = "SELECT author, title, year, publisher, genre, availability FROM inf_about_book"
 
 
-class MyWidget(QMainWindow):
+class MyWidget(QMainWindow):  # Главнео окно, с отображением всей библиотеки и кнопки с 3 разделами
     def __init__(self):
         super().__init__()
         uic.loadUi("UI1.ui", self)
@@ -21,9 +21,9 @@ class MyWidget(QMainWindow):
         self.setWindowTitle('Электронная библиотека')
 
         self.pushButton.clicked.connect(lambda: self.choose(QUERY))
-        self.pushButton_2.clicked.connect(self.update_form)
-        self.pushButton_3.clicked.connect(self.filter_form)
-        self.pushButton_4.clicked.connect(self.readers_map_form)
+        self.pushButton_2.clicked.connect(self.update_form)  # Кнопка для открытия окна редактирования библиотеки
+        self.pushButton_3.clicked.connect(self.filter_form)  # Кнопка для открытия окна с фильтром библиотеки
+        self.pushButton_4.clicked.connect(self.readers_map_form)  # Кнопка для открытия окна с карточкой читателя
 
     def update_form(self):
         self.second_form = SecondForm()
@@ -37,9 +37,9 @@ class MyWidget(QMainWindow):
         self.fourth_form = ReadersMap()
         self.fourth_form.show()
 
-    def choose(self, query):
+    def choose(self, query):  # Функция для отображения и обновления библиотеки
         res = self.cur.execute(query).fetchall()
-        if not res:
+        if not res:  # Проверка на наличие книг в библиотеки
             self.statusBar().showMessage(
                 'Ничего не нашлось, нажмите кнопку "Обновить библиотеку", чтобы добавить книги')
             return
@@ -123,10 +123,11 @@ class SecondForm(QWidget):
         self.window_error.move(10, 330)
         self.window_error.resize(300, 22)
 
-    def update(self):
+    def update(self):  # Функция для обновления библиотеки, путем заполения всех полей
         if self.update_edit.text() == '' or self.author.text() == '' or self.title.text() == '' or (
                 self.year.text() == '' or self.year.text().isalpha()) or self.publisher.text() == '':
-            self.window_error.setText('Неверно заполнена форма')
+            self.window_error.setText('Неверно заполнена форма')  # Проверка на правильность введения полей
+            self.window_clear()
         else:
             self.window_error.setText('')
             query = "UPDATE inf_about_book SET author = '{}', title = '{}', " \
@@ -137,13 +138,12 @@ class SecondForm(QWidget):
             self.con.commit()
             self.window().close()
 
-    def load(self):
+    def load(self):  # Функция для загрузкин новых книг в библиотеку, путем заполения всех полей
         if self.author.text() == '' or self.title.text() == '' or (
                 self.year.text() == '' or self.year.text().isalpha()) or self.publisher.text() == '':
-            self.window_error.setText('Неверно введена форма, попробуйте заполнить заново')
-            qline_list = [self.author, self.title, self.year, self.publisher]
-            for i in range(4):
-                qline_list[i].setText('')
+            self.window_error.setText(
+                'Неверно введена форма, попробуйте заполнить заново')  # Проверка на правильность введения полей
+            self.window_clear()  # В случае ошибки обновляем все поля
         else:
             self.window_error.setText('')
             order_book = "INSERT INTO inf_about_book(author, title, year, publisher, genre) " \
@@ -158,7 +158,7 @@ class SecondForm(QWidget):
         title_list = []
         for title in self.cur.execute("""SELECT title FROM inf_about_book""").fetchall():
             title_list.append(title[0])
-        if self.title_delete.text() in title_list:
+        if self.title_delete.text() in title_list:  # Проверка, есть ли книга в библиотеки
             valid = QMessageBox.question(
                 self, '', "Действительно удалить книгу '{}'".format(self.title_delete.text()),
                 QMessageBox.Yes, QMessageBox.No)
@@ -169,6 +169,7 @@ class SecondForm(QWidget):
                 self.window().close()
         else:
             self.window_error.setText('Неверно введена форма, попробуйте заполнить заново')
+            self.title_delete.setText('')  # В случае ошибки обновляем все поля
 
     def define_btn(self):
         order = self.sender().text()
@@ -183,6 +184,11 @@ class SecondForm(QWidget):
 
         elif order == 'Обновить по id':
             self.update()
+
+    def window_clear(self):  # Сброс окон ввода
+        self.qline_list = [self.author, self.title, self.year, self.publisher, self.update_edit]
+        for i in range(5):
+            self.qline_list[i].setText('')
 
 
 class Filtration(QWidget):
@@ -215,30 +221,23 @@ class Filtration(QWidget):
         self.push_btn.resize(170, 60)
         self.push_btn.move(90, 100)
         self.push_btn.setText('Обновить данные')
-        self.push_btn.clicked.connect(self.filtrations)
-
-    def update_combobox2(self):
-        self.combobox2.clear()
-        query = "SELECT {} FROM inf_about_book".format(self.inf_about_book_list[self.combobox1.currentText()])
-        result = self.cur.execute(query).fetchall()
-        for res in result:
-            self.combobox2.addItem(res[0])
+        self.push_btn.clicked.connect(
+            self.filtrations)  # Сначала заполняем первое окно, далее, после нажатия кнопки, заполняем второе окно, потом ещё раз нажимаем на кнопку
 
     def filtrations(self):
         global QUERY
         self.push_btn.setText('Обновить библиотеку')
-        if self.combobox1.currentText() and self.combobox2.currentText():
+        if self.combobox1.currentText() and self.combobox2.currentText():  # Проверяем на заполнение два окна, чтобы обновить библиотеку
             QUERY = "SELECT author, title, year, publisher, genre from inf_about_book WHERE {} = '{}'".format(
                 self.inf_about_book_list[self.combobox1.currentText()], self.combobox2.currentText())
             self.window().close()
             return QUERY
-        elif self.combobox1.currentText() == 'Показать всё':
-            self.combobox2.hide()
+        elif self.combobox1.currentText() == 'Показать всё':  # Отдельное условие для "Показать всё"
             QUERY = "SELECT author, title, year, publisher, genre, availability FROM inf_about_book"
             self.window().close()
             return QUERY
         else:
-            self.combobox2.clear()
+            self.combobox2.clear()  # Заполнение второго окна
             query = "SELECT {} FROM inf_about_book".format(self.inf_about_book_list[self.combobox1.currentText()])
             result = self.cur.execute(query).fetchall()
             for res in result:
@@ -337,7 +336,7 @@ class ReadersMap(QMainWindow):
         gl.addWidget(self.table, 0, 0)
         self.table.setHorizontalHeaderLabels(['Владелец', 'Возраст', 'Книга', 'Время'])
 
-    def readers_table(self):
+    def readers_table(self):  # Заполнение таблицы с людьми, которые имеют книги на руках
         query = "SELECT reader, age, book_name, time FROM readers"
         res = self.cur.execute(query).fetchall()
         self.table.setColumnCount(4)
@@ -346,18 +345,15 @@ class ReadersMap(QMainWindow):
             self.table.setRowCount(self.table.rowCount() + 1)
             for j, elem in enumerate(row):
                 self.table.setItem(i, j, QTableWidgetItem(str(elem)))
-
-        for i in range(4):
-            self.labels[i].hide()
         self.show_readers_map('hide')
 
-    def add_readers(self):
+    def add_readers(self):  # Добавление читателей
         if self.name.text() == '' or (
                 self.age.text() == '' or self.age.text().isalpha()) or self.time.text() == '' or self.books_list.currentText() in self.employed_list:
-            self.window_error.setText('Неверно заполнена форма')
+            self.window_error.setText('Неверно заполнена форма')  # Вывод ошибок
             self.show_readers_map('clear')
         else:
-            self.window_error.setText('')
+            self.window_error.setText('')  # Добавляя читателя в библиотеку, обновляем основную таблицу с книгами
             order_readers = "INSERT INTO readers(reader, age, time, book_name) VALUES('{}', '{}', '{}', '{}')".format(
                 self.name.text(), self.age.text(), self.time.text(), self.books_list.currentText())
             self.employed_list.append(self.books_list.currentText())
@@ -381,7 +377,7 @@ class ReadersMap(QMainWindow):
         elif order == 'Удалить из БД по ФИО':
             self.delete_reader()
 
-    def show_readers_map(self, arg):
+    def show_readers_map(self, arg):  # Функция для того чтобы прятать, чистить и показывать поля
         if arg == 'show':
             for i in range(4):
                 self.labels[i].show()
@@ -396,7 +392,7 @@ class ReadersMap(QMainWindow):
             for i in [self.name, self.age, self.time, self.push_btn, self.books_list, self.delete_btn]:
                 i.hide()
 
-    def delete_reader(self):
+    def delete_reader(self):  # Удаление из БД, если человек вернул книгу
         if self.name.text() == '' or self.name.text() not in self.name_list:
             self.window_error.setText('Неверно заполнена форма')
             self.show_readers_map('clear')
